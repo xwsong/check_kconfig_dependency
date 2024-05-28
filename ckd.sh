@@ -143,7 +143,6 @@ function check_conf()
 # find out dependency for one option
 function check_denpendency()
 {
-    echo $1
     # read kconfig file
     local kconf_file=$2
     local kconf=$1
@@ -151,7 +150,6 @@ function check_denpendency()
     local dep_pattern="[!A-Z0-9_]+"
     local kconf_out=""
     local line_nu=""
-    local kconf_sec=""
     local new_conf=0
 
     echo "Checking $kconf_file for $kconf"
