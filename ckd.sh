@@ -214,7 +214,7 @@ function bfs()
         kconf_queue=(${kconf_queue[@]/$kconf})
         kconf_visited+=("CONFIG_$kconf")
         echo $(pwd)
-        next_den=$(grep -Irns "^config $kconf")
+        next_den=$(grep -Irns "^config $kconf$")
         if [[ -n $next_den ]]; then
            while IFS= read -r line; do
                kconf_file=$(awk -F ":" '{print $1}' <<< $line)
