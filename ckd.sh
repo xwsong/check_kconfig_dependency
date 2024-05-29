@@ -125,18 +125,26 @@ function add_kconf_unset()
 # find out the kernel option realted to the file
 function check_conf()
 {
-    local file_object="${filename%%.*}.o"
+    local file_object="${2%%.*}.o"
     local mf=$1
     # construct the pattern for CONFIG_***
     local pattern="(?<=\\$\()CONFIG_[_A-Z0-9]+(?=\)\s+\+=\s+$file_object)"
+    local mul_objs_pattern="^[a-z]+(?=-y\s\+=\s.*$file_object)"
 
     match=$(grep -Po "$pattern" $mf)
     if [ "$match" != "" ]; then
         echo "The option is $match"
         add_kconf ${match:7}
     else
-        echo "No kernel option for $filname"
-        exit 0
+        echo "check_conf $mul_objs_pattern"
+        match=$(grep -Po "$mul_objs_pattern" $mf)
+        if [ "$match" != "" ]; then
+            echo "check_conf $match"
+            check_conf $mf $match
+        else
+            echo "No kernel option for $filname"
+            exit 0
+        fi
     fi
 }
 
@@ -266,7 +274,7 @@ function main()
     # prepare to search
     get_relative_path $source $file
     get_kconf_files $rel_file
-    check_conf $makefile $kconfig
+    check_conf $makefile $filename
     # start doing search
     bfs
 
