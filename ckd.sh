@@ -142,7 +142,7 @@ function check_conf()
             echo "check_conf $match"
             check_conf $mf $match
         else
-            echo "No kernel option for $filname"
+            echo "No kernel option for $file_object"
             exit 0
         fi
     fi
