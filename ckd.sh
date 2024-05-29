@@ -239,19 +239,23 @@ function bfs()
 
 function print_kconf_list()
 {
-    printf "\ncheck the kconf_queue:\n"
-    for conf in ${kconf_queue[@]}; do
-        echo "$conf"
-    done
+    if [[ ${#kconf_queue[@]} -ne 0  ]]; then
+        printf "\ncheck the kconf_queue:\n"
+        for conf in ${kconf_queue[@]}; do
+            echo "$conf"
+        done
+    fi
     printf "\nThe denpendency of options of $rel_file are:\n"
     for conf in ${kconf_visited[@]}; do
         echo "$conf"
     done
 
-    printf "\nyou should unset the kconf below:\n"
-    for conf in ${kconf_unset[@]}; do
-        echo "$conf"
-    done
+    if [[ ${#kconf_unset[@]} -ne 0  ]]; then
+        printf "\nyou should unset the kconf below:\n"
+        for conf in ${kconf_unset[@]}; do
+            echo "$conf"
+        done
+    fi
 }
 
 function main()
