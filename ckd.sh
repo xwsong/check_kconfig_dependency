@@ -176,7 +176,7 @@ function check_conf()
 }
 
 # find out dependency for one option
-function check_denpendency()
+function check_dependency()
 {
     # read kconfig file
     local kconf_file=$2
@@ -199,7 +199,7 @@ function check_denpendency()
         echo "no matched line with $pattern"
         return $new_conf
     fi
-    echo "check_denpendency $kconf_out"
+    echo "check_dependency $kconf_out"
 
     line_nu=$(echo $kconf_out | awk -F ':' '{print $1}')
 
@@ -208,7 +208,7 @@ function check_denpendency()
         if [[ $line =~ ^[[:blank:]]+depends ]]; then
             # find out multiple matches in one line
             while [[ $line =~ $dep_pattern ]]; do
-                echo "new denpendency ${BASH_REMATCH[0]} for $kconf"
+                echo "new dependency ${BASH_REMATCH[0]} for $kconf"
                 if [[ ${BASH_REMATCH[0]:0:1} == "!" ]]; then
                     add_kconf_unset "${BASH_REMATCH[0]}"
                     line=${line/"${BASH_REMATCH[0]}"/}
@@ -246,7 +246,7 @@ function bfs()
            while IFS= read -r line; do
                kconf_file=$(awk -F ":" '{print $1}' <<< $line)
                echo "search next config: $kconf, $kconf_file"
-               check_denpendency "CONFIG_$kconf" "$kconf_file"
+               check_dependency "CONFIG_$kconf" "$kconf_file"
                new_conf=$?
                if [[ $new_conf -gt 0 ]] || [[ $need_recall -eq 0 ]]; then
                    need_recall=$new_conf
@@ -272,7 +272,7 @@ function print_kconf_list()
             echo "$conf"
         done
     fi
-    printf "\nThe denpendency of options of $rel_file are:\n"
+    printf "\nThe dependency of options of $rel_file are:\n"
     for conf in ${kconf_visited[@]}; do
         echo "$conf"
     done
