@@ -130,6 +130,9 @@ function check_conf()
     # construct the pattern for CONFIG_***
     local pattern="(?<=\\$\()CONFIG_[_A-Z0-9]+(?=\)\s+\+=\s+$file_object)"
     local mul_objs_pattern="^[a-z]+(?=-y\s\+=\s.*$file_object)"
+    local mul_objs_pattern2="\s+[0-9a-z/_]*$file_object"
+    local line_nu=0
+    local line=""
 
     match=$(grep -Po "$pattern" $mf)
     if [ "$match" != "" ]; then
@@ -142,8 +145,32 @@ function check_conf()
             echo "check_conf $match"
             check_conf $mf $match
         else
-            echo "No kernel option for $file_object"
-            exit 0
+            # check multiple objects only have one xxx-y line like below
+            # i915-y += \
+            #         display/dvo_ch7017.o \
+            #         display/dvo_ch7xxx.o \
+            #         display/dvo_ivch.o \
+            #......<snip>......
+            match=$(grep -Pno "$mul_objs_pattern2" $mf)
+            if [ "$match" != "" ]; then
+                line_nu=$(echo $match | awk -F ':' '{print $1}')
+                line_nu=$((line_nu-1))
+                line=$(sed "$line_nu!d" $mf)
+                while [[ ! $line =~ ^$  ]] && [[ ! $line =~ ^[a-z0-9_]+ ]]; do
+                    line_nu=$((line_nu-1))
+                    line=$(sed "$line_nu!d" $mf)
+                done
+                echo "check_conf ${BASH_REMATCH[0]}"
+                if [[ "${BASH_REMATCH[0]}" != "" ]]; then
+                    check_conf $mf ${BASH_REMATCH[0]}
+                else
+                    echo "search ERROR for $file_object"
+                    exit 0
+                fi
+            else
+                echo "No kernel option for $file_object"
+                exit 0
+            fi
         fi
     fi
 }
@@ -154,7 +181,7 @@ function check_denpendency()
     # read kconfig file
     local kconf_file=$2
     local kconf=$1
-    local pattern="^config ${kconf:7}$"
+    local pattern="^(config|menuconfig) ${kconf:7}$"
     local dep_pattern="[!A-Z0-9_]+"
     local kconf_out=""
     local line_nu=""
@@ -166,7 +193,7 @@ function check_denpendency()
         echo "$kconf_file is empty"
         return
     fi
-    kconf_out=$(grep -n "$pattern" $kconf_file)
+    kconf_out=$(grep -E -n "$pattern" $kconf_file)
     if [[ $kconf_out == "" ]]; then
         new_conf=0
         echo "no matched line with $pattern"
@@ -178,7 +205,7 @@ function check_denpendency()
 
     # read kconfig section
     while IFS= read -r line; do
-        if [[ $line =~ "depends on" ]]; then
+        if [[ $line =~ ^[[:blank:]]+depends ]]; then
             # find out multiple matches in one line
             while [[ $line =~ $dep_pattern ]]; do
                 echo "new denpendency ${BASH_REMATCH[0]} for $kconf"
@@ -214,7 +241,7 @@ function bfs()
         kconf_queue=(${kconf_queue[@]/$kconf})
         kconf_visited+=("CONFIG_$kconf")
         echo $(pwd)
-        next_den=$(grep -Irns "^config $kconf$")
+        next_den=$(grep -E -Irns "^(config|menuconfig) $kconf$")
         if [[ -n $next_den ]]; then
            while IFS= read -r line; do
                kconf_file=$(awk -F ":" '{print $1}' <<< $line)
