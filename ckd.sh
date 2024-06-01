@@ -112,7 +112,16 @@ function get_kconf_files()
 # add depedency configs to the queue
 function add_kconf()
 {
-    kconf_queue+=($1)
+    local new_kconf=$1
+
+    for kconf in ${kconf_queue[@]}; do
+        if [[ "$kconf" == "$new_kconf" ]]; then
+            echo "$kconf has existed"
+            return
+        fi
+    done
+
+    kconf_queue+=($new_kconf)
 }
 
 # add depedency configs to the queue
