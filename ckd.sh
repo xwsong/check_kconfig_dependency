@@ -124,6 +124,28 @@ function add_kconf()
     kconf_queue+=($new_kconf)
 }
 
+# add dependency configs to visited queue
+function add_kconf_visited()
+{
+    local new_kconf=$1
+    local kconf=""
+
+    if [[ "$new_kconf" == "" ]]; then
+        echo "new kconf is null"
+        return
+    fi
+
+    for kconf in ${kconf_visited[@]}; do
+        if [[ "$kconf" == "$new_kconf" ]]; then
+            echo "$kconf has existed in kconf_visited"
+            return
+        fi
+    done
+
+    echo "+++ add_kconf_visited adding $new_kconf +++"
+    kconf_visited+=($new_kconf)
+}
+
 # add depedency configs to the queue
 function add_kconf_unset()
 {
@@ -243,12 +265,13 @@ function bfs()
     local kconf_file=""
     local new_conf=0
     local need_recall=0
+    local kconf=""
 
     printf "\ndoing search for:\n"
     for kconf in ${kconf_queue[@]}; do
         echo "+++ grab $kconf for kconf_queue +++"
         kconf_queue=(${kconf_queue[@]/$kconf})
-        kconf_visited+=("CONFIG_$kconf")
+        add_kconf_visited "CONFIG_$kconf"
         echo $(pwd)
         next_den=$(grep -E -Irns "^(config|menuconfig) $kconf$")
         if [[ -n $next_den ]]; then
