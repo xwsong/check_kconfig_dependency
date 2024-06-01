@@ -57,6 +57,11 @@ function get_relative_path()
         # no match, means that candidate common part is not correct
         # go up one level (reduce common part)
         common_part="$(dirname $common_part)"
+
+        if [[ "$common_part" == "." ]]; then
+            break
+        fi
+
         # and record that we went back, with correct / handling
         if [[ -z $result ]]; then
             result=".."
