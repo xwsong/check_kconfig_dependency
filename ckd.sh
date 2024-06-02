@@ -181,28 +181,41 @@ function check_conf()
             echo "check_conf $match"
             check_conf $mf $match
         else
-            # check multiple objects only have one xxx-y line like below
-            # i915-y += \
-            #         display/dvo_ch7017.o \
-            #         display/dvo_ch7xxx.o \
-            #         display/dvo_ivch.o \
-            #......<snip>......
+            # check lines without a real object name that starts with
+	    # xxx-y or xxx-$(CONFIG_XXX)
             match=$(grep -Pno "$mul_objs_pattern2" $mf)
             if [ "$match" != "" ]; then
                 line_nu=$(echo $match | awk -F ':' '{print $1}')
                 line_nu=$((line_nu-1))
                 line=$(sed "$line_nu!d" $mf)
-                while [[ ! $line =~ ^$  ]] && [[ ! $line =~ ^[a-z0-9_]+ ]]; do
+                while [[ ! $line =~ ^$  ]]; do
+                    # check multiple objects only have one xxx-y line like below
+                    # i915-y += \
+                    #         display/dvo_ch7017.o \
+                    #         display/dvo_ch7xxx.o \
+                    #         display/dvo_ivch.o \
+                    #......<snip>......
+		    match=$(grep -Po '^[a-z0-9_]+(?=-y)' <<< $line)
+                    if [[ "$match" != "" ]]; then
+                         check_conf $mf $match
+                         return
+                    fi
+
+                    # check situation as below:
+		    # i915-$(CONFIG_HWMON) += \
+                    #        i915_hwmon.o
+		    match=$(grep -Po 'CONFIG_[A-Z0-9_]+' <<< $line)
+                    if [[ "$match" != "" ]]; then
+                         add_kconf ${match:7}
+                         return
+                    fi
+
                     line_nu=$((line_nu-1))
                     line=$(sed "$line_nu!d" $mf)
                 done
-                echo "check_conf ${BASH_REMATCH[0]}"
-                if [[ "${BASH_REMATCH[0]}" != "" ]]; then
-                    check_conf $mf ${BASH_REMATCH[0]}
-                else
-                    echo "search ERROR for $file_object"
-                    exit 0
-                fi
+
+		echo "search ERROR for $file_object"
+		exit 0
             else
                 echo "No kernel option for $file_object"
                 exit 0
