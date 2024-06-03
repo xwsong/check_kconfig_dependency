@@ -15,6 +15,7 @@ Options:
     -f, --file      the file you want to check for
     -s, --source    the kernel source
     -h, --help      print this help text and exit
+    -v, --verbose   print the searching process
 EOF
 }
 
@@ -35,6 +36,10 @@ function parse_args()
             usage
             shift;
             exit 0;;
+        -v|--verbose)
+            verbose=1
+            shift;
+            ;;
         *) break;;
         esac
     done
@@ -111,8 +116,8 @@ function get_kconf_files()
         exit 20
     fi
 
-    echo $makefile
-    echo $kconfig
+    [[ $verbose -eq 1 ]] && echo $makefile
+    [[ $verbose -eq 1 ]] && echo $kconfig
 }
 
 # add depedency configs to the queue
@@ -122,7 +127,7 @@ function add_kconf()
 
     for kconf in ${kconf_queue[@]}; do
         if [[ "$kconf" == "$new_kconf" ]]; then
-            echo "$kconf has existed"
+            [[ $verbose -eq 1 ]] && echo "$kconf has existed"
             return
         fi
     done
@@ -137,18 +142,18 @@ function add_kconf_visited()
     local kconf=""
 
     if [[ "$new_kconf" == "" ]]; then
-        echo "new kconf is null"
+        [[ $verbose -eq 1 ]] && echo "new kconf is null"
         return
     fi
 
     for kconf in ${kconf_visited[@]}; do
         if [[ "$kconf" == "$new_kconf" ]]; then
-            echo "$kconf has existed in kconf_visited"
+            [[ $verbose -eq 1 ]] && echo "$kconf has existed in kconf_visited"
             return
         fi
     done
 
-    echo "+++ add_kconf_visited adding $new_kconf +++"
+    [[ $verbose -eq 1 ]] && echo "+++ add_kconf_visited adding $new_kconf +++"
     kconf_visited+=($new_kconf)
 }
 
@@ -173,13 +178,12 @@ function check_conf()
 
     match=$(grep -Po "$pattern" $mf)
     if [ "$match" != "" ]; then
-        echo "The option is $match"
+        [[ $verbose -eq 1 ]] && echo "The option is $match"
         add_kconf ${match:7}
     else
-        echo "check_conf $mul_objs_pattern"
         match=$(grep -Po "$mul_objs_pattern" $mf)
         if [ "$match" != "" ]; then
-            echo "check_conf $match"
+            [[ $verbose -eq 1 ]] && echo "check_conf $match"
             check_conf $mf $match
         else
             # check lines without a real object name that starts with
@@ -237,19 +241,19 @@ function check_dependency()
     local line_nu=""
     local new_conf=0
 
-    echo "Checking $kconf_file for $kconf"
+    [[ $verbose -eq 1 ]] && echo "Checking $kconf_file for $kconf"
 
     if [[ -z $kconf_file ]]; then
-        echo "$kconf_file is empty"
+        [[ $verbose -eq 1 ]] && echo "$kconf_file is empty"
         return
     fi
     kconf_out=$(grep -E -n "$pattern" $kconf_file)
     if [[ $kconf_out == "" ]]; then
         new_conf=0
-        echo "no matched line with $pattern"
+        [[ $verbose -eq 1 ]] && echo "no matched line with $pattern"
         return $new_conf
     fi
-    echo "check_dependency $kconf_out"
+    [[ $verbose -eq 1 ]] && echo "check_dependency $kconf_out"
 
     line_nu=$(echo $kconf_out | awk -F ':' '{print $1}')
 
@@ -258,7 +262,7 @@ function check_dependency()
         if [[ $line =~ ^[[:blank:]]+depends ]]; then
             # find out multiple matches in one line
             while [[ $line =~ $dep_pattern ]]; do
-                echo "new dependency ${BASH_REMATCH[0]} for $kconf"
+                [[ $verbose -eq 1 ]] && echo "new dependency ${BASH_REMATCH[0]} for $kconf"
                 if [[ ${BASH_REMATCH[0]:0:1} == "!" ]]; then
                     add_kconf_unset "${BASH_REMATCH[0]}"
                     line=${line/"${BASH_REMATCH[0]}"/}
@@ -270,7 +274,7 @@ function check_dependency()
             done
         fi
         if [[ $line =~ ^[[:space:]]help$ ]] || [[ $line =~ ^$ ]]; then
-            echo "no more depends"
+            [[ $verbose -eq 1 ]] && echo "no more depends"
             break
         fi
     done < <(tail -n "+$line_nu" $kconf_file)
@@ -286,17 +290,16 @@ function bfs()
     local need_recall=0
     local kconf=""
 
-    printf "\ndoing search for:\n"
+    [[ $verbose -eq 1 ]] && printf "doing search for:\n"
     for kconf in ${kconf_queue[@]}; do
-        echo "+++ grab $kconf for kconf_queue +++"
+        [[ $verbose -eq 1 ]] && echo "+++ grab $kconf for kconf_queue +++"
         kconf_queue=(${kconf_queue[@]/$kconf})
         add_kconf_visited "CONFIG_$kconf"
-        echo $(pwd)
         next_den=$(grep -E -Irns "^(config|menuconfig) $kconf$")
         if [[ -n $next_den ]]; then
            while IFS= read -r line; do
                kconf_file=$(awk -F ":" '{print $1}' <<< $line)
-               echo "search next config: $kconf, $kconf_file"
+               [[ $verbose -eq 1 ]] && echo "search next config: $kconf, $kconf_file"
                check_dependency "CONFIG_$kconf" "$kconf_file"
                new_conf=$?
                if [[ $new_conf -gt 0 ]] || [[ $need_recall -eq 0 ]]; then
@@ -307,10 +310,12 @@ function bfs()
     done
 
     if [[ $need_recall -gt 0 ]]; then
-        echo "bfs second iteration"
-        for conf in ${kconf_queue[@]}; do
-            echo "$conf"
-        done
+        if [[ $verbose -eq 1 ]]; then
+            echo "bfs second iteration"
+            for conf in ${kconf_queue[@]}; do
+                echo "$conf"
+            done
+        fi
         bfs
     fi
 }
@@ -325,13 +330,13 @@ function print_kconf_list()
             echo "$kconf"
         done
     fi
-    printf "\nThe dependency of options of $rel_file are:\n"
+    printf "The dependency of options of $rel_file are:\n"
     for kconf in ${kconf_visited[@]}; do
         echo "$kconf"
     done
 
     if [[ ${#kconf_unset[@]} -ne 0  ]]; then
-        printf "\nyou should unset the kconf below:\n"
+        printf "NOTICE: you should unset the kconf below:\n"
         for kconf in ${kconf_unset[@]}; do
             echo "$kconf"
         done
