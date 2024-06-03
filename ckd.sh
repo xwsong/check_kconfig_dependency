@@ -94,7 +94,7 @@ function get_relative_path()
     rel_file=$result
     if [ ! -f ${rel_file} ]; then
         echo "the file not exsit"
-        exit 1
+        exit 20
     fi
 }
 
@@ -108,6 +108,7 @@ function get_kconf_files()
 
     if [[ ! -f $makefile ]] || [[ ! -f $kconfig ]]; then
         echo "$makefile or $kconfig not exist"
+        exit 30
     fi
 
     echo $makefile
@@ -215,10 +216,10 @@ function check_conf()
                 done
 
                 echo "search ERROR for $file_object"
-                exit 0
+                exit 41
             else
                 echo "No kernel option for $file_object"
-                exit 0
+                exit 40
             fi
         fi
     fi
@@ -344,13 +345,13 @@ function main()
     if [[ "$file" == "" ]] || [[ ! -f $file ]]; then
         echo "The source file is not correct"
         usage
-        exit 1
+        exit 10
     fi
 
     if [[ ! -d "$source" ]] || [[ ! -f "$source/Kconfig" ]]; then
         echo "The kernel source tree is not correct"
         usage
-        exit 1
+        exit 11
     fi
 
     cd $source
@@ -363,6 +364,8 @@ function main()
 
     # print result
     print_kconf_list
+
+    exit 0
 }
 
 main "$@"
