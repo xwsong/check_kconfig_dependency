@@ -182,7 +182,7 @@ function check_conf()
             check_conf $mf $match
         else
             # check lines without a real object name that starts with
-	    # xxx-y or xxx-$(CONFIG_XXX)
+	        # xxx-y or xxx-$(CONFIG_XXX)
             match=$(grep -Pno "$mul_objs_pattern2" $mf)
             if [ "$match" != "" ]; then
                 line_nu=$(echo $match | awk -F ':' '{print $1}')
@@ -195,16 +195,16 @@ function check_conf()
                     #         display/dvo_ch7xxx.o \
                     #         display/dvo_ivch.o \
                     #......<snip>......
-		    match=$(grep -Po '^[a-z0-9_]+(?=-y)' <<< $line)
+                    match=$(grep -Po '^[a-z0-9_]+(?=-y)' <<< $line)
                     if [[ "$match" != "" ]]; then
                          check_conf $mf $match
                          return
                     fi
 
                     # check situation as below:
-		    # i915-$(CONFIG_HWMON) += \
+                    # i915-$(CONFIG_HWMON) += \
                     #        i915_hwmon.o
-		    match=$(grep -Po 'CONFIG_[A-Z0-9_]+' <<< $line)
+                    match=$(grep -Po 'CONFIG_[A-Z0-9_]+' <<< $line)
                     if [[ "$match" != "" ]]; then
                          add_kconf ${match:7}
                          return
@@ -214,8 +214,8 @@ function check_conf()
                     line=$(sed "$line_nu!d" $mf)
                 done
 
-		echo "search ERROR for $file_object"
-		exit 0
+                echo "search ERROR for $file_object"
+                exit 0
             else
                 echo "No kernel option for $file_object"
                 exit 0
