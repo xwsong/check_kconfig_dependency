@@ -190,65 +190,63 @@ function check_conf()
         add_kconf ${match:7}
     else
         match=$(grep -Po "$mul_objs_pattern" $mf)
+        match2=$(grep -Pno "$mul_objs_pattern2" $mf)
+        match3=$(grep -Pno "$mul_objs_pattern3" $mf)
         if [ "$match" != "" ]; then
             [[ $verbose -eq 1 ]] && echo "check_conf $match"
             check_conf $mf $match
-        else
+        elif [ "$match2" != "" ]; then
             # check lines without a real object name that starts with
 	        # xxx-y or xxx-$(CONFIG_XXX)
-            match2=$(grep -Pno "$mul_objs_pattern2" $mf)
-            match3=$(grep -Pno "$mul_objs_pattern3" $mf)
-            if [ "$match2" != "" ]; then
-                line_nu=$(echo $match2 | awk -F ':' '{print $1}')
+            line_nu=$(echo $match2 | awk -F ':' '{print $1}')
+            line_nu=$((line_nu-1))
+            line=$(sed "$line_nu!d" $mf)
+            while [[ ! $line =~ ^$  ]]; do
+                # check multiple objects only have one xxx-y line like below
+                # i915-y += \
+                #         display/dvo_ch7017.o \
+                #         display/dvo_ch7xxx.o \
+                #         display/dvo_ivch.o \
+                #......<snip>......
+                match2=$(grep -Po '^[a-z0-9_]+(?=-y)' <<< $line)
+                if [[ "$match2" != "" ]]; then
+                     check_conf $mf $match2
+                     return
+                fi
+
+                # check situation as below:
+                # i915-$(CONFIG_HWMON) += \
+                #        i915_hwmon.o
+                match2=$(grep -Po 'CONFIG_[A-Z0-9_]+' <<< $line)
+                if [[ "$match2" != "" ]]; then
+                     add_kconf ${match2:7}
+                     return
+                fi
+
+                # check situation as below:
+                # nf_tables-objs := nf_tables_core.o nf_tables_api.o nft_chain_filter.o \
+                #     nf_tables_trace.o nft_immediate.o nft_cmp.o nft_range.o \
+                #     nft_bitwise.o nft_byteorder.o nft_payload.o nft_lookup.o \
+                match2=$(grep -Po '^[0-9a-z_]+(?=-objs)' <<< $line)
+                if [[ "$match2" != "" ]]; then
+                     check_conf $mf $match2
+                     return
+                fi
+
                 line_nu=$((line_nu-1))
                 line=$(sed "$line_nu!d" $mf)
-                while [[ ! $line =~ ^$  ]]; do
-                    # check multiple objects only have one xxx-y line like below
-                    # i915-y += \
-                    #         display/dvo_ch7017.o \
-                    #         display/dvo_ch7xxx.o \
-                    #         display/dvo_ivch.o \
-                    #......<snip>......
-                    match2=$(grep -Po '^[a-z0-9_]+(?=-y)' <<< $line)
-                    if [[ "$match2" != "" ]]; then
-                         check_conf $mf $match2
-                         return
-                    fi
+            done
 
-                    # check situation as below:
-                    # i915-$(CONFIG_HWMON) += \
-                    #        i915_hwmon.o
-                    match2=$(grep -Po 'CONFIG_[A-Z0-9_]+' <<< $line)
-                    if [[ "$match2" != "" ]]; then
-                         add_kconf ${match2:7}
-                         return
-                    fi
-
-                    # check situation as below:
-                    # nf_tables-objs := nf_tables_core.o nf_tables_api.o nft_chain_filter.o \
-                    #     nf_tables_trace.o nft_immediate.o nft_cmp.o nft_range.o \
-                    #     nft_bitwise.o nft_byteorder.o nft_payload.o nft_lookup.o \
-                    match2=$(grep -Po '^[0-9a-z_]+(?=-objs)' <<< $line)
-                    if [[ "$match2" != "" ]]; then
-                         check_conf $mf $match2
-                         return
-                    fi
-
-                    line_nu=$((line_nu-1))
-                    line=$(sed "$line_nu!d" $mf)
-                done
-
-                echo "search ERROR for $file_object"
-                exit 31
-            elif [ "$match3" != "" ]; then
-                match3=$(awk -F ':' '{print $2}' <<< $match3)
-                [[ verbose -eq 1 ]] && echo "check_conf $match3"
-                check_conf $mf $match3
-                return
-            else
-                echo "No kernel option for $file_object"
-                exit 30
-            fi
+            echo "search ERROR for $file_object"
+            exit 31
+        elif [ "$match3" != "" ]; then
+            match3=$(awk -F ':' '{print $2}' <<< $match3)
+            [[ verbose -eq 1 ]] && echo "check_conf $match3"
+            check_conf $mf $match3
+            return
+        else
+            echo "No kernel option for $file_object"
+            exit 30
         fi
     fi
 }
