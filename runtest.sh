@@ -16,6 +16,7 @@ test_cases[2]="drivers/edac/zynqmp_edac.c"
 test_cases[3]="drivers/usb/core/port.c"
 test_cases[4]="kernel/relay.c"
 test_cases[5]="net/netfilter/nft_byteorder.c"
+test_cases[6]="net/atm/ioctl.c"
 
 source_tree=$1
 
