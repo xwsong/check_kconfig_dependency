@@ -111,9 +111,13 @@ function get_kconf_files()
     kconfig=$rel_path/Kconfig
     filename=$(basename $1)
 
-    if [[ ! -f $makefile ]] || [[ ! -f $kconfig ]]; then
-        echo "$makefile or $kconfig not exist"
+    if [[ ! -f $makefile ]]; then
+        echo "$makefile not exist"
         exit 20
+    fi
+
+    if [[ ! -f $kconfig ]]; then
+        echo "NOTICE: $kconfig not exist"
     fi
 
     [[ $verbose -eq 1 ]] && echo $makefile

@@ -14,6 +14,7 @@ test_cases[0]="drivers/gpu/drm/i915/i915_gem_evict.c"
 test_cases[1]="drivers/gpu/drm/i915/i915_hwmon.c"
 test_cases[2]="drivers/edac/zynqmp_edac.c"
 test_cases[3]="drivers/usb/core/port.c"
+test_cases[4]="kernel/relay.c"
 
 source_tree=$1
 
