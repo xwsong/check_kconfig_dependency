@@ -17,6 +17,7 @@ test_cases[3]="drivers/usb/core/port.c"
 test_cases[4]="kernel/relay.c"
 test_cases[5]="net/netfilter/nft_byteorder.c"
 test_cases[6]="net/atm/ioctl.c"
+test_cases[7]="drivers/tty/vt/vc_screen.c"
 
 source_tree=$1
 
