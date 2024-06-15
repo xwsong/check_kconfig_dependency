@@ -164,7 +164,7 @@ function add_kconf_visited()
 # add depedency configs to the queue
 function add_kconf_unset()
 {
-    local unset_kconf=${1:1}
+    local unset_kconf=$1
     kconf_unset+=(CONFIG_$unset_kconf)
 }
 
@@ -288,7 +288,7 @@ function check_dependency()
             while [[ $line =~ $dep_pattern ]]; do
                 [[ $verbose -eq 1 ]] && echo "new dependency ${BASH_REMATCH[0]} for $kconf"
                 if [[ ${BASH_REMATCH[0]:0:1} == "!" ]]; then
-                    add_kconf_unset "${BASH_REMATCH[0]}"
+                    add_kconf_unset "${BASH_REMATCH[0]:1}"
                     line=${line/"${BASH_REMATCH[0]}"/}
                     continue
                 fi
