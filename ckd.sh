@@ -297,6 +297,11 @@ function check_dependency()
                 line=${line/"${BASH_REMATCH[0]}"/}
             done
         fi
+
+        if [[ $line =~ ^[[:space:]]bool.*EXPERT ]]; then
+            add_kconf_unset "EXPERT"
+        fi
+
         if [[ $line =~ ^[[:space:]]help$ ]] || [[ $line =~ ^$ ]]; then
             [[ $verbose -eq 1 ]] && echo "no more depends"
             break
