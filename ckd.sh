@@ -174,7 +174,7 @@ function check_conf()
     local file_object="${2%%.*}.o"
     local mf=$1
     # construct the pattern for CONFIG_***
-    local pattern="(?<=\\$\()CONFIG_[_A-Z0-9]+(?=\)\s+\+=[a-z0-9_. ]+$file_object)"
+    local pattern="(?<=\\$\()CONFIG_[_A-Z0-9]+(?=\)\s+(:|\+)=[a-z0-9_. ]+$file_object)"
     local mul_objs_pattern="^[a-z]+(?=-y\s+(:|\+)=\s.*$file_object)"
     local mul_objs_pattern2="^\s+[0-9a-z/_. ]*$file_object"
     local mul_objs_pattern3="^[0-9a-z_]+(?=-objs.*$file_object)"
